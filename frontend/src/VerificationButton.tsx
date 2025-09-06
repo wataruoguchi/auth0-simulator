@@ -25,6 +25,9 @@ export function VerificationButton() {
                   },
                 },
               );
+              if (!response.ok) {
+                throw new Error("Failed to verify token");
+              }
               const data = await response.json();
               setIsVerified(data.verified);
               console.log(data.payload);

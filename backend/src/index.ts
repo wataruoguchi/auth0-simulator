@@ -12,10 +12,17 @@ const __dirname = path.dirname(__filename);
 
 const app = new Hono();
 
+if (!process.env.VITE_AUTH0_DOMAIN) {
+  throw new Error("Missing environment variables");
+}
+
 app.use(
   "*",
   cors({
-    origin: "http://localhost:5173", // When the frontend dev server is running
+    origin:
+      process.env.NODE_ENV === "production"
+        ? "*" // In production, allow all origins since we serve from same origin
+        : "http://localhost:5173", // When the frontend dev server is running
   }),
 );
 
@@ -47,10 +54,12 @@ app.get("/api/verify", (c: Context) => {
   return c.json({ verified: true, payload });
 });
 
+const port = process.env.PORT ? parseInt(process.env.PORT) : 3000;
+
 serve(
   {
     fetch: app.fetch,
-    port: 3000,
+    port: port,
   },
   (info) => {
     console.log(`Server is running on http://localhost:${info.port}`);
