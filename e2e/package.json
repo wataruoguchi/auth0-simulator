@@ -1,0 +1,29 @@
+{
+  "name": "e2e-tests",
+  "version": "1.0.0",
+  "description": "E2E tests for PoC E2E with Auth0",
+  "type": "module",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:headed": "cypress run --headed",
+    "test": "npm run cypress:run",
+    "test:headed": "npm run cypress:run:headed",
+    "simulator": "tsx src/start-simulator.ts",
+    "dev": "npm run simulator"
+  },
+  "devDependencies": {
+    "@simulacrum/auth0-simulator": "^0.4.0",
+    "@simulacrum/client": "^0.4.0",
+    "@simulacrum/server": "^0.4.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.11.17",
+    "cypress": "^13.15.0",
+    "effection": "^3.6.0",
+    "express": "^4.18.2",
+    "http-proxy-middleware": "^2.0.6",
+    "jsonwebtoken": "^9.0.2",
+    "tsx": "^4.7.1",
+    "typescript": "^5.8.3"
+  }
+}

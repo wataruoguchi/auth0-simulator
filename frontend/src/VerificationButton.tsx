@@ -12,6 +12,7 @@ export function VerificationButton() {
       <div>
         <button
           type="button"
+          data-testid="verify-button"
           onClick={async () => {
             setIsVerifying(true);
             setIsVerified(false);
@@ -40,7 +41,9 @@ export function VerificationButton() {
         >
           {isVerifying ? "Verifying..." : "Verify"}
         </button>
-        <p>{isVerified ? "Verified" : "Not Verified"} by the backend.</p>
+        <p data-testid="verification-result">
+          {isVerified ? "Verified" : "Not Verified"} by the backend.
+        </p>
       </div>
     )
   );

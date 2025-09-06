@@ -5,7 +5,11 @@ export function LoginButton() {
 
   return (
     !isAuthenticated && (
-      <button type="button" onClick={() => loginWithRedirect()}>
+      <button 
+        type="button" 
+        data-testid="login-button"
+        onClick={() => loginWithRedirect()}
+      >
         Log in
       </button>
     )

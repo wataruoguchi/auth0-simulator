@@ -4,8 +4,11 @@ export function Profile() {
   const { user, isAuthenticated } = useAuth0();
 
   return isAuthenticated ? (
-    <div>Hello {user!.name}</div>
+    <div data-testid="profile">
+      <div data-testid="user-name">Hello {user!.name}</div>
+      <div data-testid="user-email">{user!.email}</div>
+    </div>
   ) : (
-    <div>No user found</div>
+    <div data-testid="profile">No user found</div>
   );
 }

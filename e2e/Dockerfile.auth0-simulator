@@ -1,0 +1,25 @@
+FROM node:20-alpine
+
+# Install OpenSSL for certificate generation
+RUN apk add --no-cache openssl
+
+WORKDIR /app
+
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy source code
+COPY src/ ./src/
+COPY tsconfig.json ./
+
+# Compile TypeScript
+RUN npx tsc
+
+# Expose port
+EXPOSE 4400
+
+# Start Auth0 simulator
+CMD ["node", "-e", "import('./dist/auth0-simulator.js').then(m => m.startAuth0Simulator())"]

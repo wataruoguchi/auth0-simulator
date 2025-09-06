@@ -7,6 +7,7 @@ export function LogoutButton() {
     isAuthenticated && (
       <button
         type="button"
+        data-testid="logout-button"
         onClick={() => {
           logout({
             logoutParams: {

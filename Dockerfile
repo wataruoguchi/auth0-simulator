@@ -13,6 +13,17 @@ RUN npm install
 # Copy frontend source code
 COPY frontend/ ./
 
+# Set environment variables for frontend build
+ARG VITE_AUTH0_DOMAIN=localhost:4400
+ARG VITE_AUTH0_CLIENT_ID=test-client-id
+ARG VITE_AUTH0_AUDIENCE=test-audience
+ARG VITE_API_URL=http://localhost:3000
+
+ENV VITE_AUTH0_DOMAIN=$VITE_AUTH0_DOMAIN
+ENV VITE_AUTH0_CLIENT_ID=$VITE_AUTH0_CLIENT_ID
+ENV VITE_AUTH0_AUDIENCE=$VITE_AUTH0_AUDIENCE
+ENV VITE_API_URL=$VITE_API_URL
+
 # Build frontend
 RUN npm run build
 
@@ -53,7 +64,7 @@ COPY --from=backend-builder /app/backend/dist ./dist
 COPY --from=backend-builder /app/backend/src ./src
 
 # Copy frontend assets to backend public directory
-COPY --from=frontend-builder /app/dist ./public
+COPY --from=frontend-builder /app/dist /app/backend/public
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
