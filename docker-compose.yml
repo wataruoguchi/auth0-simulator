@@ -36,11 +36,12 @@ services:
     build:
       context: ./e2e
       dockerfile: Dockerfile.cypress
+    network_mode: host # for e2e tests to work. We need to use 'localhost:3000' instead of 'app:3000' (Auth0 requires it.)
     depends_on:
       - app
       - auth0-simulator
     environment:
-      - CYPRESS_baseUrl=http://app:3000
+      - CYPRESS_baseUrl=http://localhost:3000
       - CYPRESS_AUTH0_DOMAIN=https://localhost:4400
     volumes:
       - ./e2e/cypress:/e2e/cypress
