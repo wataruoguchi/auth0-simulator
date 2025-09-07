@@ -30,6 +30,7 @@ services:
       - "4400:4400"
     environment:
       - PORT=4400
+    restart: unless-stopped
 
   e2e:
     build:

@@ -6,18 +6,18 @@ declare namespace Cypress {
      * Custom command to login with Auth0 simulator
      * @example cy.login()
      */
-    login(): Chainable<void>
-    
+    login(): Chainable<void>;
+
     /**
      * Custom command to logout
      * @example cy.logout()
      */
-    logout(): Chainable<void>
-    
+    logout(): Chainable<void>;
+
     /**
      * Custom command to verify API endpoint
      * @example cy.verifyApi()
      */
-    verifyApi(): Chainable<void>
+    verifyApi(): Chainable<void>;
   }
 }

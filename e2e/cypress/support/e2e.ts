@@ -14,13 +14,13 @@
 // ***********************************************************
 
 // Import commands.js using ES2015 syntax:
-import './commands';
+import "./commands";
 
 // Handle uncaught exceptions from the application
-Cypress.on('uncaught:exception', (err, runnable) => {
+Cypress.on("uncaught:exception", (err, runnable) => {
   // Ignore Auth0 secure origin errors in tests
-  if (err.message.includes('auth0-spa-js must run on a secure origin')) {
-    console.log('Ignoring Auth0 secure origin error for testing');
+  if (err.message.includes("auth0-spa-js must run on a secure origin")) {
+    console.log("Ignoring Auth0 secure origin error for testing");
     return false;
   }
   // Don't prevent the test from failing for other errors

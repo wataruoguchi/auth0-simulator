@@ -14,7 +14,7 @@ RUN npm install
 COPY frontend/ ./
 
 # Set environment variables for frontend build
-ARG VITE_AUTH0_DOMAIN=localhost:4400
+ARG VITE_AUTH0_DOMAIN=https://localhost:4400
 ARG VITE_AUTH0_CLIENT_ID=test-client-id
 ARG VITE_AUTH0_AUDIENCE=test-audience
 ARG VITE_API_URL=http://localhost:3000
