@@ -63,13 +63,19 @@ describe("Authentication Flow", () => {
     });
 
     // Check verification result's initial state
-    cy.get('[data-testid="verification-result"]').should("be.visible").should("not.contain", "Verified").should("contain", "Unverified");
+    cy.get('[data-testid="verification-result"]')
+      .should("be.visible")
+      .should("not.contain", "Verified")
+      .should("contain", "Unverified");
 
     // Test the verification button
     cy.get('[data-testid="verify-button"]').click();
 
     // Check verification result's final state
-    cy.get('[data-testid="verification-result"]').should("be.visible").should("contain", "Verified").should("not.contain", "Unverified");
+    cy.get('[data-testid="verification-result"]')
+      .should("be.visible")
+      .should("contain", "Verified")
+      .should("not.contain", "Unverified");
   });
 
   it("should logout successfully when authenticated", () => {
