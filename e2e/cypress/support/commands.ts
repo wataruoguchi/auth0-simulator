@@ -9,27 +9,27 @@ const AUTH0_AUDIENCE = "test-audience";
 Cypress.Commands.add("login", () => {
   // For SPA applications, we need to handle the redirect flow
   cy.visit("/");
-  
+
   // Click the login button to trigger auth0-spa-js loginWithRedirect
   cy.get('[data-testid="login-button"]').click();
-  
+
   // Wait for redirect to Auth0 (or simulator)
   cy.url().should("include", "localhost:4400");
-  
+
   // Handle the Auth0 simulator page
   cy.origin("https://localhost:4400", () => {
     // Fill in the login form
-    cy.get('input[name="email"]').type('test@example.com');
-    cy.get('input[name="password"]').type('password123');
+    cy.get('input[name="email"]').type("test@example.com");
+    cy.get('input[name="password"]').type("password123");
     cy.get('button[type="submit"]').click();
   });
-  
+
   // Wait for redirect back to the app
   cy.url().should("not.include", "localhost:4400");
-  
+
   // Wait for auth0-spa-js to process the callback
   cy.wait(3000);
-  
+
   // Verify we're logged in
   cy.get('[data-testid="logout-button"]').should("be.visible");
 });

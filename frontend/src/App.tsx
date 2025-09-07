@@ -6,12 +6,13 @@ import { LoginButton } from "./LoginButton";
 import { LogoutButton } from "./LogoutButton";
 import { Profile } from "./Profile";
 import { VerificationButton } from "./VerificationButton";
+import { Wrapper } from "./Wrapper";
 
 function App() {
   const [count, setCount] = useState(0);
 
   return (
-    <>
+    <Wrapper>
       <div>
         <a href="https://vite.dev" target="_blank">
           <img src={viteLogo} className="logo" alt="Vite logo" />
@@ -38,7 +39,7 @@ function App() {
           <VerificationButton />
         </div>
       </div>
-    </>
+    </Wrapper>
   );
 }
 

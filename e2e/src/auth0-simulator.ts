@@ -1,4 +1,5 @@
 // Auth0 simulator using custom Express implementation with HTTPS and proper PKCE support
+import { execSync } from "child_process";
 import express from "express";
 import fs from "fs";
 import https from "https";
@@ -17,21 +18,59 @@ const authCodeStore = new Map<string, string>();
 const getRSAKeyPair = () => {
   // Use the pre-generated RSA key
   const keyPath = "/tmp/test-rsa-key.pem";
-  
+
   if (fs.existsSync(keyPath)) {
-    return {
-      privateKey: fs.readFileSync(keyPath),
-    };
+    const privateKey = fs.readFileSync(keyPath);
+
+    // Extract public key from private key for JWKS
+    try {
+      const publicKey = execSync(
+        `openssl rsa -in ${keyPath} -pubout -outform PEM`,
+        { encoding: "utf8" },
+      );
+      return {
+        privateKey,
+        publicKey,
+      };
+    } catch (error) {
+      console.error("Error extracting public key:", error);
+      return {
+        privateKey,
+        publicKey: null,
+      };
+    }
   }
-  
+
   return null;
+};
+
+// Convert PEM public key to JWK format
+const pemToJwk = (pemKey: string) => {
+  try {
+    // Extract modulus and exponent from the public key
+    const modulus = execSync(
+      `echo "${pemKey}" | openssl rsa -pubin -modulus -noout | sed 's/Modulus=//' | xxd -r -p | base64 -w 0 | tr -d '=' | tr '/+' '_-'`,
+      { encoding: "utf8" },
+    ).trim();
+    return {
+      kty: "RSA",
+      kid: "test-key-id",
+      use: "sig",
+      alg: "RS256",
+      n: modulus,
+      e: "AQAB", // Standard exponent for RSA
+    };
+  } catch (error) {
+    console.error("Error converting PEM to JWK:", error);
+    return null;
+  }
 };
 
 // Generate self-signed certificate for HTTPS
 const generateSelfSignedCert = () => {
   const keyPath = "/tmp/key.pem";
   const certPath = "/tmp/cert.pem";
-  
+
   // Generate self-signed certificate if it doesn't exist
   if (!fs.existsSync(keyPath) || !fs.existsSync(certPath)) {
     const { execSync } = require("child_process");
@@ -65,23 +104,29 @@ const mockUser = {
   picture: "https://via.placeholder.com/150",
   aud: "test-client-id", // Changed from "test-audience" to match clientId
   iss: `https://localhost:${PORT}/`,
-  iat: Math.floor(Date.now() / 1000),
-  exp: Math.floor(Date.now() / 1000) + 3600, // 1 hour
   azp: "test-client-id",
   scope: "openid profile email offline_access",
-  nonce: "test-nonce-123" // Added nonce claim
+  nonce: "test-nonce-123", // Added nonce claim
 };
 
 // Generate JWT token
 const generateToken = (user: any, nonce?: string) => {
-  const tokenPayload = { ...user };
+  const now = Math.floor(Date.now() / 1000);
+  const tokenPayload = {
+    ...user,
+    iat: now,
+    exp: now + 3600, // 1 hour from now
+  };
   if (nonce) {
     tokenPayload.nonce = nonce;
   }
-  
+
   const rsaKeys = getRSAKeyPair();
   if (rsaKeys) {
-    return jwt.sign(tokenPayload, rsaKeys.privateKey, { algorithm: "RS256" });
+    return jwt.sign(tokenPayload, rsaKeys.privateKey, {
+      algorithm: "RS256",
+      keyid: "test-key-id", // Add the key ID for JWKS verification
+    });
   } else {
     // Fall back to HMAC
     return jwt.sign(tokenPayload, JWT_SECRET, { algorithm: "HS256" });
@@ -98,10 +143,10 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
   res.header("Access-Control-Allow-Headers", "*");
   res.header("Access-Control-Allow-Credentials", "true");
-  
+
   // Log requests for debugging
   console.log(`${req.method} ${req.path}`, req.body);
-  
+
   if (req.method === "OPTIONS") {
     res.sendStatus(200);
   } else {
@@ -121,33 +166,43 @@ app.get("/.well-known/openid_configuration", (req, res) => {
     subject_types_supported: ["public"],
     id_token_signing_alg_values_supported: ["HS256"],
     scopes_supported: ["openid", "profile", "email", "offline_access"],
-    code_challenge_methods_supported: ["S256"]
+    code_challenge_methods_supported: ["S256"],
   });
 });
 
 // JWKS endpoint
 app.get("/.well-known/jwks.json", (req, res) => {
   console.log("JWKS request received");
-  
+
   const rsaKeys = getRSAKeyPair();
   let jwks;
-  
-  if (rsaKeys) {
-    // Use hardcoded modulus from pre-generated key
-    const modulus = "sqGXf3aPXMRDiykYa1gUn3aislmG1ZmwngZrwStLr3tR7VGRatXFjTgN1nzF6Ie61byvoaC4-j-2lWY1G3DuJOUCJDng6wpgRJm-oyUeaUJuQI53o9tj6Z37I6SwMWMjkbQ9yA43gvGmYvld3us0JglQHpcM5IFmhUWwy1KwgccC0fbcwJVTKKowAo81sD5sdA0Gw3MTpKRIqO9uuBvEFL7sXoQC181G9aa8cl21V-NMxfNqUKUYiuCxRC_6xM-WkR7KsfK2zz03PYPYOKv-cbwf5ifAeZ9My4t1LAE92kj0_5NN6Wx8qogxwZVCopOfHDd_CCfWxWrpXrCw7wbDQ";
-    
-    jwks = {
-      keys: [
-        {
-          kty: "RSA",
-          kid: "test-key-id",
-          use: "sig",
-          alg: "RS256",
-          n: modulus,
-          e: "AQAB" // Standard exponent for RSA
-        }
-      ]
-    };
+
+  if (rsaKeys && rsaKeys.publicKey) {
+    // Convert the actual public key to JWK format
+    const jwk = pemToJwk(rsaKeys.publicKey);
+
+    if (jwk) {
+      jwks = {
+        keys: [jwk],
+      };
+    } else {
+      // Fallback to hardcoded modulus if conversion fails
+      const modulus =
+        "sqGXf3aPXMRDiykYa1gUn3aislmG1ZmwngZrwStLr3tR7VGRatXFjTgN1nzF6Ie61byvoaC4-j-2lWY1G3DuJOUCJDng6wpgRJm-oyUeaUJuQI53o9tj6Z37I6SwMWMjkbQ9yA43gvGmYvld3us0JglQHpcM5IFmhUWwy1KwgccC0fbcwJVTKKowAo81sD5sdA0Gw3MTpKRIqO9uuBvEFL7sXoQC181G9aa8cl21V-NMxfNqUKUYiuCxRC_6xM-WkR7KsfK2zz03PYPYOKv-cbwf5ifAeZ9My4t1LAE92kj0_5NN6Wx8qogxwZVCopOfHDd_CCfWxWrpXrCw7wbDQ";
+
+      jwks = {
+        keys: [
+          {
+            kty: "RSA",
+            kid: "test-key-id",
+            use: "sig",
+            alg: "RS256",
+            n: modulus,
+            e: "AQAB", // Standard exponent for RSA
+          },
+        ],
+      };
+    }
   } else {
     // Fall back to HMAC
     jwks = {
@@ -157,20 +212,29 @@ app.get("/.well-known/jwks.json", (req, res) => {
           kid: "test-key-id",
           use: "sig",
           alg: "HS256",
-          k: Buffer.from(JWT_SECRET).toString("base64url")
-        }
-      ]
+          k: Buffer.from(JWT_SECRET).toString("base64url"),
+        },
+      ],
     };
   }
-  
+
   console.log("JWKS response:", jwks);
   res.json(jwks);
 });
 
 // Authorization endpoint
 app.get("/authorize", (req, res) => {
-  const { client_id, redirect_uri, state, response_type, scope, code_challenge, code_challenge_method, nonce } = req.query;
-  
+  const {
+    client_id,
+    redirect_uri,
+    state,
+    response_type,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    nonce,
+  } = req.query;
+
   // Simple HTML login form
   const html = `
     <!DOCTYPE html>
@@ -208,63 +272,84 @@ app.get("/authorize", (req, res) => {
           <input type="password" id="password" name="password" value="password123" required>
         </div>
         
-        <button type="submit">Login</button>
+        <button data-testid="simulator-login-button" type="submit">Login</button>
       </form>
     </body>
     </html>
   `;
-  
+
   res.send(html);
 });
 
 // Login endpoint
 app.post("/login", (req, res) => {
-  const { client_id, redirect_uri, state, response_type, scope, code_challenge, code_challenge_method, nonce } = req.body;
-  
+  const {
+    client_id,
+    redirect_uri,
+    state,
+    response_type,
+    scope,
+    code_challenge,
+    code_challenge_method,
+    nonce,
+  } = req.body;
+
   // Generate authorization code
   const authCode = "test-auth-code-" + Date.now();
-  
+
   // Store the nonce with the authorization code
   if (nonce) {
     authCodeStore.set(authCode, nonce as string);
   }
-  
+
   // Redirect back to the app with authorization code
   const redirectUrl = new URL(redirect_uri as string);
   redirectUrl.searchParams.set("code", authCode);
   redirectUrl.searchParams.set("state", state as string);
-  
+
   res.redirect(redirectUrl.toString());
 });
 
 // Token endpoint with proper PKCE support
 app.post("/oauth/token", (req, res) => {
   const { code, grant_type, redirect_uri, client_id, code_verifier } = req.body;
-  
-  console.log("Token request:", { code, grant_type, redirect_uri, client_id, code_verifier });
-  
+
+  console.log("Token request:", {
+    code,
+    grant_type,
+    redirect_uri,
+    client_id,
+    code_verifier,
+  });
+
   if (grant_type === "authorization_code" && code) {
     // For PKCE, we should validate the code_verifier, but for testing we'll accept any
     // Retrieve the nonce associated with this authorization code
     const nonce = authCodeStore.get(code as string);
     const accessToken = generateToken(mockUser, nonce);
     const idToken = generateToken(mockUser, nonce);
-    
+
     const response = {
       access_token: accessToken,
       id_token: idToken,
       token_type: "Bearer",
       expires_in: 3600,
-      refresh_token: "test-refresh-token"
+      refresh_token: "test-refresh-token",
     };
-    
+
     console.log("Token response:", response);
     console.log("Generated access token:", accessToken);
     console.log("Generated id token:", idToken);
-    
+
     res.json(response);
   } else {
-    console.log("Invalid token request:", { code, grant_type, redirect_uri, client_id, code_verifier });
+    console.log("Invalid token request:", {
+      code,
+      grant_type,
+      redirect_uri,
+      client_id,
+      code_verifier,
+    });
     res.status(400).json({ error: "invalid_grant" });
   }
 });
@@ -278,7 +363,7 @@ app.get("/userinfo", (req, res) => {
 app.get("/v2/logout", (req, res) => {
   const { returnTo } = req.query;
   console.log("Logout request:", { returnTo });
-  
+
   if (returnTo) {
     // Redirect back to the app
     res.redirect(returnTo as string);
@@ -312,10 +397,10 @@ app.get("/health", (req, res) => {
 export const startAuth0Simulator = async () => {
   try {
     console.log("Starting Auth0 simulator with HTTPS...");
-    
+
     // Generate self-signed certificate
     const { key, cert } = generateSelfSignedCert();
-    
+
     // Create HTTPS server
     const server = https.createServer({ key, cert }, app).listen(PORT, () => {
       console.log(`Auth0 Simulator running at https://localhost:${PORT}`);
@@ -327,7 +412,7 @@ export const startAuth0Simulator = async () => {
       server.close();
       process.exit(0);
     });
-    
+
     return `https://localhost:${PORT}`;
   } catch (error) {
     console.error("Failed to start Auth0 simulator:", error);

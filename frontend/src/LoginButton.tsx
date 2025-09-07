@@ -1,7 +1,14 @@
 import { useAuth0 } from "@auth0/auth0-react";
 
 export function LoginButton() {
-  const { isAuthenticated, loginWithRedirect, isLoading, error, user, getAccessTokenSilently } = useAuth0();
+  const {
+    isAuthenticated,
+    loginWithRedirect,
+    isLoading,
+    error,
+    user,
+    getAccessTokenSilently,
+  } = useAuth0();
 
   // Add comprehensive logging
   console.log("🔍 Frontend Auth0 Debug:");
@@ -24,20 +31,18 @@ export function LoginButton() {
 
   // Check if we have tokens
   if (isAuthenticated) {
-    getAccessTokenSilently().then(token => {
-      console.log("🎫 Access token:", token);
-    }).catch(err => {
-      console.error("❌ Token error:", err);
-    });
+    getAccessTokenSilently()
+      .then((token) => {
+        console.log("🎫 Access token:", token);
+      })
+      .catch((err) => {
+        console.error("❌ Token error:", err);
+      });
   }
 
   return (
     !isAuthenticated && (
-      <button
-        type="button"
-        data-testid="login-button"
-        onClick={handleLogin}
-      >
+      <button type="button" data-testid="login-button" onClick={handleLogin}>
         Log in
       </button>
     )

@@ -20,7 +20,7 @@ export function VerificationButton() {
               console.log("🔍 Verification Debug:");
               const token = await getAccessTokenSilently();
               console.log("  Access token for verification:", token);
-              
+
               const response = await fetch(
                 `${import.meta.env.VITE_API_URL}/api/verify`,
                 {
@@ -29,16 +29,21 @@ export function VerificationButton() {
                   },
                 },
               );
-              
+
               console.log("  API response status:", response.status);
-              console.log("  API response headers:", Object.fromEntries(response.headers.entries()));
-              
+              console.log(
+                "  API response headers:",
+                Object.fromEntries(response.headers.entries()),
+              );
+
               if (!response.ok) {
                 const errorText = await response.text();
                 console.error("  API error response:", errorText);
-                throw new Error(`Failed to verify token: ${response.status} ${errorText}`);
+                throw new Error(
+                  `Failed to verify token: ${response.status} ${errorText}`,
+                );
               }
-              
+
               const data = await response.json();
               console.log("  API response data:", data);
               setIsVerified(data.verified);
@@ -54,7 +59,7 @@ export function VerificationButton() {
           {isVerifying ? "Verifying..." : "Verify"}
         </button>
         <p data-testid="verification-result">
-          {isVerified ? "Verified" : "Not Verified"} by the backend.
+          {isVerified ? "Verified" : "Unverified"} by the backend.
         </p>
       </div>
     )
