@@ -1,10 +1,10 @@
 import { getRSAKeyPair } from "./cert-utils.js";
 import {
-  createMockUser,
-  createTokenPayload,
-  generateHMACToken,
-  generateRSAToken,
-  MockUser,
+    createMockUser,
+    createTokenPayload,
+    generateHMACToken,
+    generateRSAToken,
+    MockUser,
 } from "./jwt-utils.js";
 
 export interface AuthCodeStore {
@@ -13,8 +13,16 @@ export interface AuthCodeStore {
   delete(code: string): boolean;
 }
 
+export interface UserData {
+  email: string;
+  name?: string;
+  given_name?: string;
+  family_name?: string;
+}
+
 export class InMemoryAuthCodeStore implements AuthCodeStore {
   private store = new Map<string, string>();
+  private userDataStore = new Map<string, UserData>();
 
   get(code: string): string | undefined {
     return this.store.get(code);
@@ -27,6 +35,18 @@ export class InMemoryAuthCodeStore implements AuthCodeStore {
   delete(code: string): boolean {
     return this.store.delete(code);
   }
+
+  setUserData(code: string, userData: UserData): void {
+    this.userDataStore.set(code, userData);
+  }
+
+  getUserData(code: string): UserData | undefined {
+    return this.userDataStore.get(code);
+  }
+
+  deleteUserData(code: string): boolean {
+    return this.userDataStore.delete(code);
+  }
 }
 
 export interface AuthConfig {
@@ -35,6 +55,20 @@ export interface AuthConfig {
   authCodeStore: AuthCodeStore;
   mockUser: MockUser;
 }
+
+export const createUserFromData = (userData: UserData, issuer: string): MockUser => ({
+  sub: `user-${userData.email.replace('@', '-').replace('.', '-')}`, // Generate sub from email
+  email: userData.email,
+  name: userData.name || userData.email.split('@')[0],
+  given_name: userData.given_name || userData.email.split('@')[0].split('.')[0],
+  family_name: userData.family_name || userData.email.split('@')[0].split('.').slice(1).join(' '),
+  picture: "https://via.placeholder.com/150",
+  aud: "test-client-id",
+  iss: issuer,
+  azp: "test-client-id",
+  scope: "openid profile email offline_access",
+  nonce: "test-nonce-123",
+});
 
 export const createAuthConfig = (port: number = 4400): AuthConfig => {
   const issuer = `https://localhost:${port}/`;
@@ -149,6 +183,8 @@ export const processLogin = (
     code_challenge,
     code_challenge_method,
     nonce,
+    email,
+    password,
   } = formData;
 
   // Generate authorization code
@@ -157,6 +193,17 @@ export const processLogin = (
   // Store the nonce with the authorization code
   if (nonce) {
     authConfig.authCodeStore.set(authCode, nonce);
+  }
+
+  // Store user data from the login form
+  if (email) {
+    const userData: UserData = {
+      email,
+      name: email.split('@')[0], // Use email prefix as name
+      given_name: email.split('@')[0].split('.')[0], // First part before dot
+      family_name: email.split('@')[0].split('.').slice(1).join(' '), // Rest after dot
+    };
+    (authConfig.authCodeStore as InMemoryAuthCodeStore).setUserData(authCode, userData);
   }
 
   // Create redirect URL
@@ -186,7 +233,12 @@ export const processTokenExchange = (
 
   // Retrieve the nonce associated with this authorization code
   const nonce = authConfig.authCodeStore.get(code);
-  const tokenPayload = createTokenPayload(authConfig.mockUser, nonce);
+  
+  // Get user data from the login form, fallback to mock user
+  const userData = (authConfig.authCodeStore as InMemoryAuthCodeStore).getUserData(code);
+  const user = userData ? createUserFromData(userData, authConfig.issuer) : authConfig.mockUser;
+  
+  const tokenPayload = createTokenPayload(user, nonce);
 
   // Try to use RSA key if available, fallback to HMAC
   const rsaKeys = getRSAKeyPair();
@@ -208,6 +260,10 @@ export const processTokenExchange = (
     accessToken = generateHMACToken(tokenPayload);
     idToken = generateHMACToken(tokenPayload);
   }
+
+  // Clean up the stored data
+  authConfig.authCodeStore.delete(code);
+  (authConfig.authCodeStore as InMemoryAuthCodeStore).deleteUserData(code);
 
   return {
     access_token: accessToken,

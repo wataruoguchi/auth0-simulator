@@ -3,21 +3,23 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import https from "https";
 import {
-    createAuthConfig,
-    createLoginForm,
-    createLogoutPage,
-    createOpenIDConfig,
-    processLogin,
-    processTokenExchange,
+  createAuthConfig,
+  createLoginForm,
+  createLogoutPage,
+  createOpenIDConfig,
+  processLogin,
+  processTokenExchange,
 } from "./auth-handlers.js";
 import {
-    createJWKS,
-    generateSelfSignedCert,
-    getRSAKeyPair,
+  createJWKS,
+  generateSelfSignedCert,
+  getRSAKeyPair,
 } from "./cert-utils.js";
 
 const PORT = 4400;
-const EXTERNAL_PORT = process.env.EXTERNAL_PORT ? parseInt(process.env.EXTERNAL_PORT) : PORT;
+const EXTERNAL_PORT = process.env.EXTERNAL_PORT
+  ? parseInt(process.env.EXTERNAL_PORT)
+  : PORT;
 const app = new Hono();
 
 // Create auth configuration with external port for issuer
