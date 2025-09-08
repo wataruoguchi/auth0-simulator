@@ -12,7 +12,9 @@
     "isolatedModules": true,
     "noEmit": false,
     "outDir": "./dist",
-    "types": ["cypress", "node"]
+    "types": ["cypress", "node"],
+    "allowImportingTsExtensions": false,
+    "allowSyntheticDefaultImports": true
   },
   "include": ["cypress/**/*.ts", "cypress/**/*.d.ts", "src/**/*.ts"],
   "exclude": ["node_modules"]

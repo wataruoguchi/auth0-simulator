@@ -14,8 +14,6 @@ COPY cypress.config.ts ./
 COPY tsconfig.json ./
 
 # Set environment variables
-ENV CYPRESS_baseUrl=http://localhost:3001
-ENV CYPRESS_AUTH0_DOMAIN=http://localhost:4400
 
 # Default command
 CMD ["npx", "cypress", "run"]

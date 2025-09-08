@@ -74,7 +74,7 @@ RUN addgroup -g 1001 -S nodejs && \
 RUN chown -R nextjs:nodejs /app
 USER nextjs
 
-# Expose port 4000
+# Expose port 3000
 EXPOSE 3000
 
 # Set environment variables

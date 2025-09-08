@@ -8,7 +8,7 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV:-development}
       - PORT=${PORT:-3000}
-      - VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-localhost:4400}
+      - VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-https://auth0-simulator:4400}
       - VITE_AUTH0_CLIENT_ID=${VITE_AUTH0_CLIENT_ID:-test-client-id}
       - VITE_AUTH0_AUDIENCE=${VITE_AUTH0_AUDIENCE:-test-client-id}
       - VITE_API_URL=${VITE_API_URL:-http://localhost:3000}
