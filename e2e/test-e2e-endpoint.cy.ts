@@ -8,7 +8,7 @@ describe("E2E Testing Endpoint", () => {
       // Change the email to a custom value
       cy.get('input[name="email"]').clear().type("e2e-test@example.com");
       cy.get('input[name="password"]').clear().type("testpassword");
-      
+
       // Click the login button
       cy.get('[data-testid="simulator-login-button"]').click();
     });
@@ -17,8 +17,11 @@ describe("E2E Testing Endpoint", () => {
     cy.get('[data-testid="logout-button"]').should("be.visible");
 
     // Verify the user profile shows the custom email
-    cy.get('[data-testid="user-email"]').should("contain", "e2e-test@example.com");
-    
+    cy.get('[data-testid="user-email"]').should(
+      "contain",
+      "e2e-test@example.com",
+    );
+
     // This demonstrates that:
     // 1. The user was created with the custom email from the login form
     // 2. The user data is stored in the simulator's user store
@@ -29,26 +32,29 @@ describe("E2E Testing Endpoint", () => {
 
   it("should return 401 when called without access token", () => {
     cy.request({
-      method: 'GET',
-      url: 'https://localhost:4400/api/e2e/fetch_email_by_sub',
-      failOnStatusCode: false
+      method: "GET",
+      url: "https://localhost:4400/api/e2e/fetch_email_by_sub",
+      failOnStatusCode: false,
     }).then((response) => {
       expect(response.status).to.eq(401);
-      expect(response.body).to.have.property('error', 'Missing or invalid authorization header');
+      expect(response.body).to.have.property(
+        "error",
+        "Missing or invalid authorization header",
+      );
     });
   });
 
   it("should return 401 when called with invalid access token", () => {
     cy.request({
-      method: 'GET',
-      url: 'https://localhost:4400/api/e2e/fetch_email_by_sub',
+      method: "GET",
+      url: "https://localhost:4400/api/e2e/fetch_email_by_sub",
       headers: {
-        'Authorization': 'Bearer invalid-token'
+        Authorization: "Bearer invalid-token",
       },
-      failOnStatusCode: false
+      failOnStatusCode: false,
     }).then((response) => {
       expect(response.status).to.eq(401);
-      expect(response.body).to.have.property('error', 'Invalid access token');
+      expect(response.body).to.have.property("error", "Invalid access token");
     });
   });
 });

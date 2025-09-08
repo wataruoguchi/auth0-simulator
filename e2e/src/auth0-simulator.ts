@@ -137,18 +137,18 @@ app.get("/userinfo", async (c) => {
 
     // Extract the access token
     const accessToken = authHeader.substring(7);
-    
+
     // Decode the JWT token to get the sub
     const { decodeToken } = await import("./jwt-utils.js");
     const decoded = decodeToken(accessToken);
-    
+
     if (!decoded || !decoded.sub) {
       return c.json({ error: "Invalid access token" }, 401);
     }
 
     // Look up the user by sub
     const user = getUserInfo(decoded.sub, authConfig);
-    
+
     if (!user) {
       return c.json({ error: "User not found" }, 404);
     }
@@ -185,18 +185,20 @@ app.get("/api/e2e/fetch_email_by_sub", async (c) => {
 
     // Extract the access token
     const accessToken = authHeader.substring(7);
-    
-    // Decode the JWT token to get the sub
-    const { decodeToken } = await import("./jwt-utils.js");
-    const decoded = decodeToken(accessToken);
-    
-    if (!decoded || !decoded.sub) {
+
+    // Verify JWT signature using JWKS (same as backend)
+    const { verifyWithJwks } = await import("hono/jwt");
+    const decoded = await verifyWithJwks(accessToken, {
+      jwks_uri: `https://localhost:${EXTERNAL_PORT}/.well-known/jwks.json`,
+    });
+
+    if (!decoded || typeof decoded.sub !== "string" || !decoded.sub) {
       return c.json({ error: "Invalid access token" }, 401);
     }
 
     // Look up the user by sub
     const user = getUserInfo(decoded.sub, authConfig);
-    
+
     if (!user) {
       return c.json({ error: "User not found" }, 404);
     }

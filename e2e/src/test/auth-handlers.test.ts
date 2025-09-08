@@ -62,7 +62,7 @@ describe("Auth Handlers", () => {
     it("should generate unique authorization codes", async () => {
       const code1 = generateAuthCode();
       // Add small delay to ensure different timestamps
-      await new Promise((resolve) => setTimeout(resolve, 1));
+      await new Promise((resolve) => setTimeout(resolve, 2));
       const code2 = generateAuthCode();
 
       expect(code1).toMatch(/^test-auth-code-\d+$/);
