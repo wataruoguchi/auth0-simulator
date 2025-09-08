@@ -25,7 +25,7 @@ describe("Authentication Flow", () => {
     cy.get('[data-testid="login-button"]').click();
 
     // Handle the Auth0 simulator page with cy.origin
-    cy.origin("https://localhost:4400", () => {
+    cy.origin(Cypress.env("AUTH0_DOMAIN") || "https://localhost:4400", () => {
       // Click the login button on the Auth0 simulator page
       cy.get('[data-testid="simulator-login-button"]').click();
     });
@@ -42,7 +42,7 @@ describe("Authentication Flow", () => {
     cy.get('[data-testid="login-button"]').click();
 
     // Handle the Auth0 simulator page with cy.origin
-    cy.origin("https://localhost:4400", () => {
+    cy.origin(Cypress.env("AUTH0_DOMAIN") || "https://localhost:4400", () => {
       // Click the login button on the Auth0 simulator page
       cy.get('[data-testid="simulator-login-button"]').click();
     });
@@ -57,7 +57,7 @@ describe("Authentication Flow", () => {
     cy.get('[data-testid="login-button"]').click();
 
     // Handle the Auth0 simulator page with cy.origin
-    cy.origin("https://localhost:4400", () => {
+    cy.origin(Cypress.env("AUTH0_DOMAIN") || "https://localhost:4400", () => {
       // Click the login button on the Auth0 simulator page
       cy.get('[data-testid="simulator-login-button"]').click();
     });
@@ -83,7 +83,7 @@ describe("Authentication Flow", () => {
     cy.get('[data-testid="login-button"]').click();
 
     // Handle the Auth0 simulator page with cy.origin
-    cy.origin("https://localhost:4400", () => {
+    cy.origin(Cypress.env("AUTH0_DOMAIN") || "https://localhost:4400", () => {
       cy.get('[data-testid="simulator-login-button"]').click();
     });
 
