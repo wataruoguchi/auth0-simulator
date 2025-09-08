@@ -11,7 +11,7 @@ describe("Email Capture in ID Token", () => {
       // Change the email to a custom value
       cy.get('input[name="email"]').clear().type("custom@test.com");
       cy.get('input[name="password"]').clear().type("mypassword");
-      
+
       // Click the login button on the Auth0 simulator page
       cy.get('[data-testid="simulator-login-button"]').click();
     });
@@ -35,7 +35,7 @@ describe("Email Capture in ID Token", () => {
       // Change the email to a different custom value
       cy.get('input[name="email"]').clear().type("admin@company.com");
       cy.get('input[name="password"]').clear().type("admin123");
-      
+
       // Click the login button on the Auth0 simulator page
       cy.get('[data-testid="simulator-login-button"]').click();
     });

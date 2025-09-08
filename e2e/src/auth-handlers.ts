@@ -1,10 +1,10 @@
 import { getRSAKeyPair } from "./cert-utils.js";
 import {
-    createMockUser,
-    createTokenPayload,
-    generateHMACToken,
-    generateRSAToken,
-    MockUser,
+  createMockUser,
+  createTokenPayload,
+  generateHMACToken,
+  generateRSAToken,
+  MockUser,
 } from "./jwt-utils.js";
 
 export interface AuthCodeStore {
@@ -18,6 +18,28 @@ export interface UserData {
   name?: string;
   given_name?: string;
   family_name?: string;
+}
+
+export interface UserStore {
+  getUserBySub(sub: string): MockUser | undefined;
+  storeUser(user: MockUser): void;
+  deleteUser(sub: string): boolean;
+}
+
+export class InMemoryUserStore implements UserStore {
+  private users = new Map<string, MockUser>();
+
+  getUserBySub(sub: string): MockUser | undefined {
+    return this.users.get(sub);
+  }
+
+  storeUser(user: MockUser): void {
+    this.users.set(user.sub, user);
+  }
+
+  deleteUser(sub: string): boolean {
+    return this.users.delete(sub);
+  }
 }
 
 export class InMemoryAuthCodeStore implements AuthCodeStore {
@@ -53,15 +75,21 @@ export interface AuthConfig {
   issuer: string;
   port: number;
   authCodeStore: AuthCodeStore;
+  userStore: UserStore;
   mockUser: MockUser;
 }
 
-export const createUserFromData = (userData: UserData, issuer: string): MockUser => ({
-  sub: `user-${userData.email.replace('@', '-').replace('.', '-')}`, // Generate sub from email
+export const createUserFromData = (
+  userData: UserData,
+  issuer: string,
+): MockUser => ({
+  sub: `user-${userData.email.replace("@", "-").replace(".", "-")}`, // Generate sub from email
   email: userData.email,
-  name: userData.name || userData.email.split('@')[0],
-  given_name: userData.given_name || userData.email.split('@')[0].split('.')[0],
-  family_name: userData.family_name || userData.email.split('@')[0].split('.').slice(1).join(' '),
+  name: userData.name || userData.email.split("@")[0],
+  given_name: userData.given_name || userData.email.split("@")[0].split(".")[0],
+  family_name:
+    userData.family_name ||
+    userData.email.split("@")[0].split(".").slice(1).join(" "),
   picture: "https://via.placeholder.com/150",
   aud: "test-client-id",
   iss: issuer,
@@ -76,6 +104,7 @@ export const createAuthConfig = (port: number = 4400): AuthConfig => {
     issuer,
     port,
     authCodeStore: new InMemoryAuthCodeStore(),
+    userStore: new InMemoryUserStore(),
     mockUser: createMockUser(issuer),
   };
 };
@@ -199,11 +228,14 @@ export const processLogin = (
   if (email) {
     const userData: UserData = {
       email,
-      name: email.split('@')[0], // Use email prefix as name
-      given_name: email.split('@')[0].split('.')[0], // First part before dot
-      family_name: email.split('@')[0].split('.').slice(1).join(' '), // Rest after dot
+      name: email.split("@")[0], // Use email prefix as name
+      given_name: email.split("@")[0].split(".")[0], // First part before dot
+      family_name: email.split("@")[0].split(".").slice(1).join(" "), // Rest after dot
     };
-    (authConfig.authCodeStore as InMemoryAuthCodeStore).setUserData(authCode, userData);
+    (authConfig.authCodeStore as InMemoryAuthCodeStore).setUserData(
+      authCode,
+      userData,
+    );
   }
 
   // Create redirect URL
@@ -233,11 +265,18 @@ export const processTokenExchange = (
 
   // Retrieve the nonce associated with this authorization code
   const nonce = authConfig.authCodeStore.get(code);
-  
+
   // Get user data from the login form, fallback to mock user
-  const userData = (authConfig.authCodeStore as InMemoryAuthCodeStore).getUserData(code);
-  const user = userData ? createUserFromData(userData, authConfig.issuer) : authConfig.mockUser;
-  
+  const userData = (
+    authConfig.authCodeStore as InMemoryAuthCodeStore
+  ).getUserData(code);
+  const user = userData
+    ? createUserFromData(userData, authConfig.issuer)
+    : authConfig.mockUser;
+
+  // Store the user in the user store for later lookup
+  authConfig.userStore.storeUser(user);
+
   const tokenPayload = createTokenPayload(user, nonce);
 
   // Try to use RSA key if available, fallback to HMAC
@@ -272,4 +311,12 @@ export const processTokenExchange = (
     expires_in: 3600,
     refresh_token: "test-refresh-token",
   };
+};
+
+export const getUserInfo = (
+  sub: string,
+  authConfig: AuthConfig,
+): MockUser | null => {
+  const user = authConfig.userStore.getUserBySub(sub);
+  return user || null;
 };
