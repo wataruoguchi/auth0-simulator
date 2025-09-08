@@ -1,9 +1,0 @@
-{
-  "testUser": {
-    "email": "test@example.com",
-    "password": "password123",
-    "name": "Test User",
-    "given_name": "Test",
-    "family_name": "User"
-  }
-}

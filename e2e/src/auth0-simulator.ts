@@ -1,12 +1,13 @@
-// Auth0 simulator using custom Express implementation with HTTPS and proper PKCE support
+// Auth0 simulator using Hono with HTTPS and proper PKCE support
 import { execSync } from "child_process";
-import express from "express";
 import fs from "fs";
+import { Hono } from "hono";
+import { cors } from "hono/cors";
 import https from "https";
 import jwt from "jsonwebtoken";
 
 const PORT = 4400;
-const app = express();
+const app = new Hono();
 
 // Mock JWT secret for HMAC (fallback)
 const JWT_SECRET = "test-secret-key";
@@ -133,30 +134,26 @@ const generateToken = (user: any, nonce?: string) => {
   }
 };
 
-// Middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 // CORS middleware
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "*");
-  res.header("Access-Control-Allow-Credentials", "true");
+app.use(
+  "*",
+  cors({
+    origin: "*",
+    allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowHeaders: ["*"],
+    credentials: true,
+  }),
+);
 
-  // Log requests for debugging
-  console.log(`${req.method} ${req.path}`, req.body);
-
-  if (req.method === "OPTIONS") {
-    res.sendStatus(200);
-  } else {
-    next();
-  }
+// Logging middleware
+app.use("*", async (c, next) => {
+  console.log(`${c.req.method} ${c.req.path}`);
+  await next();
 });
 
 // OpenID Connect Discovery endpoint
-app.get("/.well-known/openid_configuration", (req, res) => {
-  res.json({
+app.get("/.well-known/openid_configuration", (c) => {
+  return c.json({
     issuer: `https://localhost:${PORT}/`,
     authorization_endpoint: `https://localhost:${PORT}/authorize`,
     token_endpoint: `https://localhost:${PORT}/oauth/token`,
@@ -171,7 +168,7 @@ app.get("/.well-known/openid_configuration", (req, res) => {
 });
 
 // JWKS endpoint
-app.get("/.well-known/jwks.json", (req, res) => {
+app.get("/.well-known/jwks.json", (c) => {
   console.log("JWKS request received");
 
   const rsaKeys = getRSAKeyPair();
@@ -219,11 +216,11 @@ app.get("/.well-known/jwks.json", (req, res) => {
   }
 
   console.log("JWKS response:", jwks);
-  res.json(jwks);
+  return c.json(jwks);
 });
 
 // Authorization endpoint
-app.get("/authorize", (req, res) => {
+app.get("/authorize", (c) => {
   const {
     client_id,
     redirect_uri,
@@ -233,7 +230,7 @@ app.get("/authorize", (req, res) => {
     code_challenge,
     code_challenge_method,
     nonce,
-  } = req.query;
+  } = c.req.query();
 
   // Simple HTML login form
   const html = `
@@ -278,98 +275,121 @@ app.get("/authorize", (req, res) => {
     </html>
   `;
 
-  res.send(html);
+  return c.html(html);
 });
 
 // Login endpoint
-app.post("/login", (req, res) => {
-  const {
-    client_id,
-    redirect_uri,
-    state,
-    response_type,
-    scope,
-    code_challenge,
-    code_challenge_method,
-    nonce,
-  } = req.body;
+app.post("/login", async (c) => {
+  try {
+    const body = await c.req.parseBody();
+    console.log("Login body:", body);
+    const {
+      client_id,
+      redirect_uri,
+      state,
+      response_type,
+      scope,
+      code_challenge,
+      code_challenge_method,
+      nonce,
+    } = body as Record<string, string>;
 
-  // Generate authorization code
-  const authCode = "test-auth-code-" + Date.now();
+    // Generate authorization code
+    const authCode = "test-auth-code-" + Date.now();
 
-  // Store the nonce with the authorization code
-  if (nonce) {
-    authCodeStore.set(authCode, nonce as string);
+    // Store the nonce with the authorization code
+    if (nonce) {
+      authCodeStore.set(authCode, nonce as string);
+    }
+
+    // Redirect back to the app with authorization code
+    const redirectUrl = new URL(redirect_uri as string);
+    redirectUrl.searchParams.set("code", authCode);
+    redirectUrl.searchParams.set("state", state as string);
+
+    return c.redirect(redirectUrl.toString());
+  } catch (error) {
+    console.error("Login error:", error);
+    return c.json({ error: "Failed to process login" }, 500);
   }
-
-  // Redirect back to the app with authorization code
-  const redirectUrl = new URL(redirect_uri as string);
-  redirectUrl.searchParams.set("code", authCode);
-  redirectUrl.searchParams.set("state", state as string);
-
-  res.redirect(redirectUrl.toString());
 });
 
 // Token endpoint with proper PKCE support
-app.post("/oauth/token", (req, res) => {
-  const { code, grant_type, redirect_uri, client_id, code_verifier } = req.body;
+app.post("/oauth/token", async (c) => {
+  try {
+    const contentType = c.req.header("content-type") || "";
+    console.log("Token content-type:", contentType);
 
-  console.log("Token request:", {
-    code,
-    grant_type,
-    redirect_uri,
-    client_id,
-    code_verifier,
-  });
+    let body: Record<string, string>;
+    if (contentType.includes("application/json")) {
+      body = await c.req.json();
+    } else {
+      body = (await c.req.parseBody()) as Record<string, string>;
+    }
 
-  if (grant_type === "authorization_code" && code) {
-    // For PKCE, we should validate the code_verifier, but for testing we'll accept any
-    // Retrieve the nonce associated with this authorization code
-    const nonce = authCodeStore.get(code as string);
-    const accessToken = generateToken(mockUser, nonce);
-    const idToken = generateToken(mockUser, nonce);
+    console.log("Token body:", body);
+    const { code, grant_type, redirect_uri, client_id, code_verifier } = body;
 
-    const response = {
-      access_token: accessToken,
-      id_token: idToken,
-      token_type: "Bearer",
-      expires_in: 3600,
-      refresh_token: "test-refresh-token",
-    };
-
-    console.log("Token response:", response);
-    console.log("Generated access token:", accessToken);
-    console.log("Generated id token:", idToken);
-
-    res.json(response);
-  } else {
-    console.log("Invalid token request:", {
+    console.log("Token request:", {
       code,
       grant_type,
       redirect_uri,
       client_id,
       code_verifier,
     });
-    res.status(400).json({ error: "invalid_grant" });
+
+    if (grant_type === "authorization_code" && code) {
+      // For PKCE, we should validate the code_verifier, but for testing we'll accept any
+      // Retrieve the nonce associated with this authorization code
+      const nonce = authCodeStore.get(code as string);
+      const accessToken = generateToken(mockUser, nonce);
+      const idToken = generateToken(mockUser, nonce);
+
+      const response = {
+        access_token: accessToken,
+        id_token: idToken,
+        token_type: "Bearer",
+        expires_in: 3600,
+        refresh_token: "test-refresh-token",
+      };
+
+      console.log("Token response:", response);
+      console.log("Generated access token:", accessToken);
+      console.log("Generated id token:", idToken);
+
+      return c.json(response);
+    } else {
+      console.log("Invalid token request:", {
+        code,
+        grant_type,
+        redirect_uri,
+        client_id,
+        code_verifier,
+      });
+      return c.json({ error: "invalid_grant" }, 400);
+    }
+  } catch (error) {
+    console.error("Token error:", error);
+    return c.json({ error: "Failed to process token request" }, 500);
   }
 });
 
 // User info endpoint
-app.get("/userinfo", (req, res) => {
-  res.json(mockUser);
+app.get("/userinfo", (c) => {
+  return c.json(mockUser);
 });
 
 // Logout endpoint
-app.get("/v2/logout", (req, res) => {
-  const { returnTo } = req.query;
+app.get("/v2/logout", (c) => {
+  const { returnTo } = c.req.query();
   console.log("Logout request:", { returnTo });
 
   if (returnTo) {
     // Redirect back to the app
-    res.redirect(returnTo as string);
+    return c.redirect(returnTo as string);
   } else {
     // Default logout page
-    res.send(`
+    const html = `
       <!DOCTYPE html>
       <html>
       <head>
@@ -385,13 +405,14 @@ app.get("/v2/logout", (req, res) => {
         <a href="http://localhost:3000">Return to App</a>
       </body>
       </html>
-    `);
+    `;
+    return c.html(html);
   }
 });
 
 // Health check endpoint
-app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+app.get("/health", (c) => {
+  return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 
 export const startAuth0Simulator = async () => {
@@ -401,9 +422,55 @@ export const startAuth0Simulator = async () => {
     // Generate self-signed certificate
     const { key, cert } = generateSelfSignedCert();
 
-    // Create HTTPS server
-    const server = https.createServer({ key, cert }, app).listen(PORT, () => {
-      console.log(`Auth0 Simulator running at https://localhost:${PORT}`);
+    // Create HTTPS server using Hono's serve function
+    const server = https.createServer({ key, cert }, async (req, res) => {
+      const url = new URL(req.url!, `https://${req.headers.host}`);
+
+      // Handle body for POST requests
+      let body: string | undefined;
+      if (req.method !== "GET" && req.method !== "HEAD") {
+        const chunks: Buffer[] = [];
+        req.on("data", (chunk) => chunks.push(chunk));
+        await new Promise<void>((resolve) => {
+          req.on("end", () => {
+            body = Buffer.concat(chunks).toString();
+            resolve();
+          });
+        });
+      }
+
+      const request = new Request(url.toString(), {
+        method: req.method,
+        headers: req.headers as any,
+        body: body,
+      });
+
+      const response = await app.fetch(request);
+
+      res.statusCode = response.status;
+      response.headers.forEach((value, key) => {
+        res.setHeader(key, value);
+      });
+
+      if (response.body) {
+        const reader = response.body.getReader();
+        const pump = async () => {
+          const { done, value } = await reader.read();
+          if (done) {
+            res.end();
+          } else {
+            res.write(value);
+            pump();
+          }
+        };
+        pump();
+      } else {
+        res.end();
+      }
+    });
+
+    server.listen(PORT, "0.0.0.0", () => {
+      console.log(`Auth0 Simulator running at https://0.0.0.0:${PORT}`);
     });
 
     // Store server reference for cleanup
