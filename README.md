@@ -43,18 +43,18 @@ dc rm --stop -f && dc build --no-cache && dc up
 
 ## E2E Testing
 
-This project includes comprehensive E2E tests using Cypress and a mock Auth0 simulator:
+This project includes comprehensive E2E tests using Cypress and the Auth0 Simulator package:
 
-- **Location**: `e2e/` directory
+- **Location**: `e2e-app/` directory
 - **Framework**: Cypress with TypeScript
-- **Auth0 Simulation**: Mock Auth0 server for testing authentication flows
+- **Auth0 Simulation**: Auth0 Simulator package for testing authentication flows
 - **Docker Integration**: Tests run in Docker containers
 
 ### Running E2E Tests
 
 ```bash
 # Run tests locally (requires app to be running)
-cd e2e
+cd e2e-app
 npm install
 npm run cypress:open  # Interactive mode
 npm run test          # Headless mode
@@ -67,7 +67,7 @@ docker-compose up e2e
 
 - `cypress/e2e/` - Test files
 - `cypress/support/` - Custom commands and configuration
-- `src/` - Mock Auth0 simulator setup
+- `cypress.config.cjs` - Cypress configuration
 
 ## Port Configuration
 
@@ -83,13 +83,16 @@ This project supports flexible port configuration, allowing you to choose any av
 ### Usage Examples
 
 #### Using Default Ports
+
 ```bash
 docker-compose up --build e2e
 ```
+
 - App: http://localhost:3000
 - Auth0 Simulator: https://localhost:4400
 
 #### Using Custom Ports
+
 ```bash
 # Set environment variables
 export APP_PORT=8080
@@ -98,22 +101,27 @@ export AUTH0_PORT=8440
 # Or use inline
 APP_PORT=8080 AUTH0_PORT=8440 docker-compose up --build e2e
 ```
+
 - App: http://localhost:8080
 - Auth0 Simulator: https://localhost:8440
 
 #### Using a .env File
+
 Create a `.env` file in the project root:
+
 ```bash
 APP_PORT=8080
 AUTH0_PORT=8440
 ```
 
 Then run:
+
 ```bash
 docker-compose up --build e2e
 ```
 
 ### Running E2E Tests with Custom Ports
+
 ```bash
 APP_PORT=8080 AUTH0_PORT=8440 docker-compose up --build e2e
 ```
@@ -131,6 +139,7 @@ APP_PORT=8080 AUTH0_PORT=8440 docker-compose up --build e2e
 ### Troubleshooting
 
 If you encounter port conflicts:
+
 ```bash
 # Check what's using a port
 lsof -i :3000
@@ -139,7 +148,3 @@ lsof -i :4400
 # Kill processes using those ports
 kill -9 <PID>
 ```
-
-## Environment Variables
-
-The frontend and the backend apps require the environment variables configured in `.env`. `docker-compose.yml` takes some variables as well. Please maintain all the `.env` files beside `.env.example`.

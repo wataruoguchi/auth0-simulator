@@ -69,11 +69,11 @@ COPY --from=frontend-builder /app/dist /app/backend/public
 
 # Create non-root user for security
 RUN addgroup -g 1001 -S nodejs && \
-    adduser -S nextjs -u 1001
+    adduser -S dev-user -u 1001
 
 # Change ownership of the app directory
-RUN chown -R nextjs:nodejs /app
-USER nextjs
+RUN chown -R dev-user:nodejs /app
+USER dev-user
 
 # Expose port 3000
 EXPOSE 3000

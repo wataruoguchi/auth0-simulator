@@ -1,8 +1,8 @@
-import { defineConfig } from "cypress";
+const { defineConfig } = require("cypress");
 
-export default defineConfig({
+module.exports = defineConfig({
   e2e: {
-    baseUrl: "http://localhost:3000",
+    baseUrl: process.env.CYPRESS_baseUrl || "http://localhost:3000",
     supportFile: "cypress/support/e2e.ts",
     specPattern: "cypress/e2e/**/*.cy.{js,jsx,ts,tsx}",
     viewportWidth: 1280,
@@ -13,6 +13,9 @@ export default defineConfig({
     requestTimeout: 10000,
     responseTimeout: 10000,
     pageLoadTimeout: 30000,
+    env: {
+      AUTH0_DOMAIN: process.env.AUTH0_DOMAIN || "https://localhost:4400",
+    },
     setupNodeEvents(on, config) {
       // implement node event listeners here
       on("task", {

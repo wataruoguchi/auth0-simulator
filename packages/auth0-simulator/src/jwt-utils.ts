@@ -11,7 +11,7 @@ export interface MockUser {
   iss: string;
   azp: string;
   scope: string;
-  nonce: string;
+  nonce?: string;
 }
 
 export interface TokenPayload {
@@ -25,7 +25,7 @@ export interface TokenPayload {
   iss: string;
   azp: string;
   scope: string;
-  nonce: string;
+  nonce?: string;
   iat: number;
   exp: number;
 }

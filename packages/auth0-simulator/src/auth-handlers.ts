@@ -4,7 +4,7 @@ import {
   createTokenPayload,
   generateHMACToken,
   generateRSAToken,
-  MockUser,
+  type MockUser,
 } from "./jwt-utils.js";
 
 export interface AuthCodeStore {
@@ -82,21 +82,23 @@ export interface AuthConfig {
 export const createUserFromData = (
   userData: UserData,
   issuer: string,
-): MockUser => ({
-  sub: `user-${userData.email.replace("@", "-").replace(".", "-")}`, // Generate sub from email
-  email: userData.email,
-  name: userData.name || userData.email.split("@")[0],
-  given_name: userData.given_name || userData.email.split("@")[0].split(".")[0],
-  family_name:
-    userData.family_name ||
-    userData.email.split("@")[0].split(".").slice(1).join(" "),
-  picture: "https://via.placeholder.com/150",
-  aud: "test-client-id",
-  iss: issuer,
-  azp: "test-client-id",
-  scope: "openid profile email offline_access",
-  nonce: "test-nonce-123",
-});
+): MockUser => {
+  const emailPrefix = userData.email.split("@")[0] || "user";
+  return {
+    sub: `user-${userData.email.replace("@", "-").replace(".", "-")}`, // Generate sub from email
+    email: userData.email,
+    name: userData.name || emailPrefix,
+    given_name: userData.given_name || emailPrefix.split(".")[0] || emailPrefix,
+    family_name:
+      userData.family_name || emailPrefix.split(".").slice(1).join(" ") || "",
+    picture: "https://via.placeholder.com/150",
+    aud: "test-client-id",
+    iss: issuer,
+    azp: "test-client-id",
+    scope: "openid profile email offline_access",
+    nonce: "test-nonce-123",
+  };
+};
 
 export const createAuthConfig = (port: number = 4400): AuthConfig => {
   const issuer = `https://localhost:${port}/`;
@@ -226,11 +228,12 @@ export const processLogin = (
 
   // Store user data from the login form
   if (email) {
+    const emailPrefix = email.split("@")[0] || "user";
     const userData: UserData = {
       email,
-      name: email.split("@")[0], // Use email prefix as name
-      given_name: email.split("@")[0].split(".")[0], // First part before dot
-      family_name: email.split("@")[0].split(".").slice(1).join(" "), // Rest after dot
+      name: emailPrefix, // Use email prefix as name
+      given_name: emailPrefix.split(".")[0] || emailPrefix, // First part before dot
+      family_name: emailPrefix.split(".").slice(1).join(" ") || "", // Rest after dot
     };
     (authConfig.authCodeStore as InMemoryAuthCodeStore).setUserData(
       authCode,
@@ -239,9 +242,11 @@ export const processLogin = (
   }
 
   // Create redirect URL
-  const redirectUrl = new URL(redirect_uri);
+  const redirectUrl = new URL(redirect_uri || "http://localhost:3000");
   redirectUrl.searchParams.set("code", authCode);
-  redirectUrl.searchParams.set("state", state);
+  if (state) {
+    redirectUrl.searchParams.set("state", state);
+  }
 
   return { redirectUrl: redirectUrl.toString(), authCode };
 };

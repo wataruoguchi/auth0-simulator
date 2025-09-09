@@ -1,0 +1,22 @@
+{
+  "name": "e2e-tests-with-auth0-simulator",
+  "version": "1.0.0",
+  "description": "E2E tests using the Auth0 Simulator package",
+  "type": "module",
+  "scripts": {
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:headed": "cypress run --headed",
+    "test": "npm run cypress:run",
+    "test:headed": "npm run cypress:run:headed",
+    "simulator": "node -e \"import('@wataruoguchi/auth0-simulator').then(m => m.startAuth0Simulator({port: 4400, externalPort: 4400}))\"",
+    "dev": "npm run simulator"
+  },
+  "dependencies": {
+    "@wataruoguchi/auth0-simulator": "file:../packages/auth0-simulator"
+  },
+  "devDependencies": {
+    "cypress": "^15.1.0",
+    "typescript": "^5.9.2"
+  }
+}

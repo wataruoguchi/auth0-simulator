@@ -27,8 +27,8 @@ services:
 
   auth0-simulator:
     build:
-      context: ./e2e
-      dockerfile: Dockerfile.auth0-simulator
+      context: ./packages/auth0-simulator
+      dockerfile: Dockerfile
     depends_on:
       - app
     ports:
@@ -40,17 +40,16 @@ services:
 
   e2e:
     build:
-      context: ./e2e
-      dockerfile: Dockerfile.cypress
+      context: ./e2e-app
+      dockerfile: Dockerfile
     network_mode: host # for e2e tests to work. We need to use 'localhost:3000' instead of 'app:3000' (Auth0 requires it.)
     depends_on:
       - app
       - auth0-simulator
     environment:
       - CYPRESS_baseUrl=http://localhost:${APP_PORT:-3000}
-      - CYPRESS_AUTH0_DOMAIN=https://localhost:${AUTH0_PORT:-4400}
       - AUTH0_DOMAIN=https://localhost:${AUTH0_PORT:-4400}
     volumes:
-      - ./e2e/cypress:/e2e/cypress
-      - ./e2e/cypress/videos:/e2e/cypress/videos
-      - ./e2e/cypress/screenshots:/e2e/cypress/screenshots
+      - ./e2e-app/cypress:/e2e/cypress
+      - ./e2e-app/cypress/videos:/e2e/cypress/videos
+      - ./e2e-app/cypress/screenshots:/e2e/cypress/screenshots

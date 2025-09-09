@@ -17,7 +17,7 @@ import {
   getRSAKeyPair,
 } from "./cert-utils.js";
 
-const PORT = 4400;
+const PORT = process.env.PORT ? parseInt(process.env.PORT) : 4400;
 const EXTERNAL_PORT = process.env.EXTERNAL_PORT
   ? parseInt(process.env.EXTERNAL_PORT)
   : PORT;
@@ -272,9 +272,9 @@ export const startAuth0Simulator = async () => {
       }
 
       const request = new Request(url.toString(), {
-        method: req.method,
+        method: req.method || "GET",
         headers: req.headers as any,
-        body: body,
+        body: body || null,
       });
 
       const response = await app.fetch(request);
