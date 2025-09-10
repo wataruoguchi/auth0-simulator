@@ -2,13 +2,16 @@
   "name": "poc-e2e-with-auth0",
   "private": true,
   "workspaces": [
-    "frontend",
-    "backend"
+    "packages/*"
   ],
   "scripts": {
     "format": "biome format --write",
     "lint": "biome lint",
-    "prepare": "husky"
+    "prepare": "husky",
+    "dc-rebuild": "docker-compose rm --stop -f && docker-compose build --no-cache && docker-compose up --build -d",
+    "dc-test": "docker-compose up --build e2e",
+    "dc-test:custom-ports": "APP_PORT=8080 AUTH0_PORT=8440 docker-compose up --build e2e",
+    "test:unit": "npm run test --workspaces --if-present"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.3",

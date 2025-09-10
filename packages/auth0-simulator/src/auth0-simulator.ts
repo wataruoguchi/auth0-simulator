@@ -240,7 +240,7 @@ app.get("/v2/logout", (c) => {
 });
 
 // Health check endpoint
-app.get("/health", (c) => {
+app.get("/healthz", (c) => {
   return c.json({ status: "ok", timestamp: new Date().toISOString() });
 });
 

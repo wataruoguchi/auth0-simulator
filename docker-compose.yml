@@ -1,7 +1,7 @@
 services:
   app:
     build:
-      context: .
+      context: ./packages/example
       dockerfile: Dockerfile
       args:
         - VITE_AUTH0_DOMAIN=${VITE_AUTH0_DOMAIN:-https://localhost:${AUTH0_PORT:-4400}}
@@ -40,7 +40,7 @@ services:
 
   e2e:
     build:
-      context: ./e2e-app
+      context: ./packages/example/e2e-app
       dockerfile: Dockerfile
     network_mode: host # for e2e tests to work. We need to use 'localhost:3000' instead of 'app:3000' (Auth0 requires it.)
     depends_on:
@@ -50,6 +50,6 @@ services:
       - CYPRESS_baseUrl=http://localhost:${APP_PORT:-3000}
       - AUTH0_DOMAIN=https://localhost:${AUTH0_PORT:-4400}
     volumes:
-      - ./e2e-app/cypress:/e2e/cypress
-      - ./e2e-app/cypress/videos:/e2e/cypress/videos
-      - ./e2e-app/cypress/screenshots:/e2e/cypress/screenshots
+      - ./packages/example/e2e-app/cypress:/e2e/cypress
+      - ./packages/example/e2e-app/cypress/videos:/e2e/cypress/videos
+      - ./packages/example/e2e-app/cypress/screenshots:/e2e/cypress/screenshots
