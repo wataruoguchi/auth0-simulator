@@ -9,13 +9,13 @@ describe("Index Exports", () => {
 
   it("should export authentication handlers", async () => {
     const module = await import("../index");
-    
+
     expect(module.InMemoryUserStore).toBeDefined();
     expect(module.createAuthConfig).toBeDefined();
     expect(module.getUserInfo).toBeDefined();
     expect(module.processLogin).toBeDefined();
     expect(module.processTokenExchange).toBeDefined();
-    
+
     // Check types
     expect(typeof module.createAuthConfig).toBe("function");
     expect(typeof module.getUserInfo).toBe("function");
@@ -25,13 +25,13 @@ describe("Index Exports", () => {
 
   it("should export JWT utilities", async () => {
     const module = await import("../index");
-    
+
     expect(module.createMockUser).toBeDefined();
     expect(module.decodeToken).toBeDefined();
     expect(module.generateToken).toBeDefined();
     // JwtMockUser is a type export, not available at runtime
     expect(module.JwtMockUser).toBeUndefined();
-    
+
     // Check types
     expect(typeof module.createMockUser).toBe("function");
     expect(typeof module.decodeToken).toBe("function");
@@ -40,12 +40,12 @@ describe("Index Exports", () => {
 
   it("should export certificate utilities", async () => {
     const module = await import("../index");
-    
+
     expect(module.createJWKS).toBeDefined();
     expect(module.generateSelfSignedCert).toBeDefined();
     expect(module.getRSAKeyPair).toBeDefined();
     expect(module.pemToJwk).toBeDefined();
-    
+
     // Check types
     expect(typeof module.createJWKS).toBe("function");
     expect(typeof module.generateSelfSignedCert).toBe("function");
@@ -55,14 +55,14 @@ describe("Index Exports", () => {
 
   it("should export Hono Context type", async () => {
     const module = await import("../index");
-    
+
     // Context is a type export, not available at runtime
     expect(module.Context).toBeUndefined();
   });
 
   it("should export type definitions", async () => {
     const module = await import("../index");
-    
+
     // These should be available as types (not runtime values)
     expect(module.AuthConfig).toBeUndefined(); // Type only
     expect(module.UserData).toBeUndefined(); // Type only

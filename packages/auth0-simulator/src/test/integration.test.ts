@@ -89,7 +89,7 @@ describe("Integration Tests", () => {
       const authHandlers = await import("../auth-handlers");
       const certUtils = await import("../cert-utils");
       const jwtUtils = await import("../jwt-utils");
-      
+
       expect(authHandlers.createAuthConfig).toBeDefined();
       expect(certUtils.generateSelfSignedCert).toBeDefined();
       expect(jwtUtils.generateToken).toBeDefined();
@@ -98,21 +98,21 @@ describe("Integration Tests", () => {
     it("should handle environment variables correctly", () => {
       const originalPort = process.env.PORT;
       const originalExternalPort = process.env.EXTERNAL_PORT;
-      
+
       // Test with custom ports
       process.env.PORT = "5000";
       process.env.EXTERNAL_PORT = "5001";
-      
+
       expect(process.env.PORT).toBe("5000");
       expect(process.env.EXTERNAL_PORT).toBe("5001");
-      
+
       // Test with default ports
       delete process.env.PORT;
       delete process.env.EXTERNAL_PORT;
-      
+
       expect(process.env.PORT).toBeUndefined();
       expect(process.env.EXTERNAL_PORT).toBeUndefined();
-      
+
       // Restore original values
       if (originalPort) {
         process.env.PORT = originalPort;
@@ -127,10 +127,10 @@ describe("Integration Tests", () => {
     it("should integrate auth handlers with JWT utils", async () => {
       const { createMockUser, generateToken } = await import("../jwt-utils");
       const { processTokenExchange } = await import("../auth-handlers");
-      
+
       const mockUser = createMockUser("https://localhost:4400/");
       const token = generateToken(mockUser, "test-secret");
-      
+
       expect(mockUser.sub).toBe("test-user-123");
       expect(mockUser.email).toBe("test@example.com");
       expect(typeof token).toBe("string");
@@ -140,10 +140,10 @@ describe("Integration Tests", () => {
     it("should integrate cert utils with auth handlers", async () => {
       const { generateSelfSignedCert } = await import("../cert-utils");
       const { createAuthConfig } = await import("../auth-handlers");
-      
+
       const cert = generateSelfSignedCert();
       const authConfig = createAuthConfig(4400);
-      
+
       expect(cert).toBeDefined();
       expect(authConfig).toBeDefined();
       expect(authConfig.port).toBe(4400);
@@ -153,25 +153,25 @@ describe("Integration Tests", () => {
   describe("Error Handling Integration", () => {
     it("should handle errors gracefully across modules", async () => {
       const { createMockUser } = await import("../jwt-utils");
-      
+
       // Test with invalid input - createMockUser always returns the same values
       const mockUser = createMockUser("");
-      
+
       expect(mockUser.sub).toBe("test-user-123");
       expect(mockUser.email).toBe("test@example.com");
     });
 
     it("should handle missing environment variables", () => {
       const originalPort = process.env.PORT;
-      
+
       delete process.env.PORT;
-      
+
       // Should not throw when PORT is undefined
       expect(() => {
         const port = process.env.PORT ? parseInt(process.env.PORT) : 4400;
         expect(port).toBe(4400);
       }).not.toThrow();
-      
+
       // Restore original value
       if (originalPort) {
         process.env.PORT = originalPort;
@@ -183,10 +183,10 @@ describe("Integration Tests", () => {
     it("should have consistent types across modules", async () => {
       const { createMockUser } = await import("../jwt-utils");
       const { createAuthConfig } = await import("../auth-handlers");
-      
+
       const mockUser = createMockUser("https://localhost:4400/");
       const authConfig = createAuthConfig(4400);
-      
+
       // Test that types are consistent
       expect(typeof mockUser.sub).toBe("string");
       expect(typeof mockUser.email).toBe("string");
