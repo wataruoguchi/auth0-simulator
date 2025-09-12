@@ -13,12 +13,14 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "Dockerfile",
+    "test-rsa-key.pem"
   ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/start-simulator.ts",
-    "start": "node dist/start-simulator.js",
+    "start": "npm run build && node dist/start-simulator.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
