@@ -21,6 +21,7 @@
     "build": "tsc",
     "dev": "tsx src/start-simulator.ts",
     "start": "npm run build && node dist/start-simulator.js",
+    "release": "semantic-release",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
@@ -58,9 +59,14 @@
     "jsonwebtoken": "^9.0.2"
   },
   "devDependencies": {
+    "@semantic-release/commit-analyzer": "^13.0.1",
+    "@semantic-release/github": "^11.0.6",
+    "@semantic-release/npm": "^12.0.2",
+    "@semantic-release/release-notes-generator": "^14.1.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^24.3.1",
     "@vitest/coverage-v8": "^3.2.4",
+    "semantic-release": "^24.2.8",
     "tsx": "^4.20.5",
     "typescript": "^5.9.2",
     "vitest": "^3.2.4"
