@@ -16,32 +16,24 @@ npm install @wataruoguchi/auth0-simulator
 import { startAuth0Simulator } from '@wataruoguchi/auth0-simulator';
 
 // Start the simulator
-const server = await startAuth0Simulator({
-  port: 4400,
-  externalPort: 4400,
-  domain: 'https://localhost:4400'
-});
+const url = await startAuth0Simulator();
 
 console.log('Auth0 Simulator running on https://localhost:4400');
 ```
 
 ### With Custom Configuration
 
+The simulator uses environment variables for configuration:
+
 ```typescript
-import { startAuth0Simulator, createAuthConfig } from '@wataruoguchi/auth0-simulator';
+import { startAuth0Simulator } from '@wataruoguchi/auth0-simulator';
 
-const authConfig = createAuthConfig(4400, {
-  clientId: 'my-custom-client',
-  audience: 'my-api',
-  issuer: 'https://my-auth0-simulator.com'
-});
+// Set environment variables before starting
+process.env.PORT = '4400';
+process.env.EXTERNAL_PORT = '4400';
 
-const server = await startAuth0Simulator({
-  port: 4400,
-  externalPort: 4400,
-  domain: 'https://localhost:4400',
-  authConfig
-});
+const url = await startAuth0Simulator();
+console.log(`Auth0 Simulator running at ${url}`);
 ```
 
 ## 🧪 E2E Testing with Cypress
@@ -52,21 +44,15 @@ const server = await startAuth0Simulator({
 // cypress/support/commands.ts
 import { startAuth0Simulator } from '@wataruoguchi/auth0-simulator';
 
-let auth0Simulator: any;
-
-before(() => {
+before(async () => {
   // Start Auth0 simulator before tests
-  auth0Simulator = await startAuth0Simulator({
-    port: 4400,
-    externalPort: 4400
-  });
+  await startAuth0Simulator();
 });
 
 after(() => {
   // Clean up after tests
-  if (auth0Simulator) {
-    auth0Simulator.close();
-  }
+  // The simulator handles its own cleanup via SIGINT
+  console.log('Tests completed');
 });
 ```
 
@@ -98,18 +84,18 @@ describe('Authentication Flow', () => {
 
 ### Core Functions
 
-#### `startAuth0Simulator(options)`
+#### `startAuth0Simulator()`
 
 Starts the Auth0 simulator server.
 
-**Parameters:**
+**Configuration:**
 
-- `options.port` (number): Internal port for the server
-- `options.externalPort` (number): External port for JWT issuer
-- `options.domain` (string): Base domain for the simulator
-- `options.authConfig` (AuthConfig, optional): Custom authentication configuration
+The simulator uses environment variables for configuration:
 
-**Returns:** Promise<Server> - The running server instance
+- `PORT` (string): Internal port for the server (default: 4400)
+- `EXTERNAL_PORT` (string): External port for JWT issuer (default: same as PORT)
+
+**Returns:** `Promise<string>` - The URL where the simulator is running
 
 #### `createAuthConfig(port, options?)`
 

@@ -8,7 +8,7 @@ import {
   generateToken,
   JWT_SECRET,
   verifyToken,
-} from "../jwt-utils";
+} from "./jwt-utils";
 
 describe("JWT Utils", () => {
   describe("createMockUser", () => {

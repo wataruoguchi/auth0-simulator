@@ -8,7 +8,7 @@ import {
   generateAuthCode,
   processLogin,
   processTokenExchange,
-} from "../auth-handlers";
+} from "./auth-handlers";
 
 describe("Auth Handlers", () => {
   describe("InMemoryAuthCodeStore", () => {

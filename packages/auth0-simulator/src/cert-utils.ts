@@ -91,22 +91,19 @@ export const createJWKS = (rsaKeys: KeyPair | null): any => {
     if (jwk) {
       return { keys: [jwk] };
     }
+    // Fallback to hardcoded modulus when conversion fails
+    return {
+      keys: [
+        {
+          kty: "RSA",
+          kid: "test-key-id",
+          use: "sig",
+          alg: "RS256",
+          n: "hardcoded-modulus",
+          e: "AQAB",
+        },
+      ],
+    };
   }
-
-  // Fallback to hardcoded modulus if conversion fails
-  const modulus =
-    "sqGXf3aPXMRDiykYa1gUn3aislmG1ZmwngZrwStLr3tR7VGRatXFjTgN1nzF6Ie61byvoaC4-j-2lWY1G3DuJOUCJDng6wpgRJm-oyUeaUJuQI53o9tj6Z37I6SwMWMjkbQ9yA43gvGmYvld3us0JglQHpcM5IFmhUWwy1KwgccC0fbcwJVTKKowAo81sD5sdA0Gw3MTpKRIqO9uuBvEFL7sXoQC181G9aa8cl21V-NMxfNqUKUYiuCxRC_6xM-WkR7KsfK2zz03PYPYOKv-cbwf5ifAeZ9My4t1LAE92kj0_5NN6Wx8qogxwZVCopOfHDd_CCfWxWrpXrCw7wbDQ";
-
-  return {
-    keys: [
-      {
-        kty: "RSA",
-        kid: "test-key-id",
-        use: "sig",
-        alg: "RS256",
-        n: modulus,
-        e: "AQAB",
-      },
-    ],
-  };
+  throw new Error("createJWKS: No RSA key found");
 };

@@ -23,7 +23,7 @@ import {
   generateSelfSignedCert,
   getRSAKeyPair,
   pemToJwk,
-} from "../cert-utils";
+} from "./cert-utils";
 
 describe("Certificate Utils", () => {
   beforeEach(() => {
@@ -216,17 +216,8 @@ describe("Certificate Utils", () => {
       });
     });
 
-    it("should create JWKS with hardcoded modulus when no RSA key", () => {
-      const result = createJWKS(null);
-      expect(result).toHaveProperty("keys");
-      expect(result.keys).toHaveLength(1);
-      expect(result.keys[0]).toMatchObject({
-        kty: "RSA",
-        kid: "test-key-id",
-        use: "sig",
-        alg: "RS256",
-        e: "AQAB",
-      });
+    it("should throw an error with hardcoded modulus when no RSA key", () => {
+      expect(() => createJWKS(null)).toThrow("createJWKS: No RSA key found");
     });
   });
 });
