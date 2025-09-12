@@ -1,21 +1,45 @@
-# PoC E2E with Auth0
+# E2E with Auth0 Simulator
+
+## Package available
+
+Please read [./packages/auth0-simulator/README.md](./packages/auth0-simulator/README.md) for the package infromation.
 
 ## Setup
 
-1. Copy the environment file and configure your Auth0 settings:
-
-```sh
-cp .env.example .env
-# Edit .env with your actual Auth0 domain and other settings
-```
-
-2. Start the application:
+Start the application:
 
 ```sh
 docker-compose up -d
 ```
 
 ## Commands
+
+### NPM Scripts
+
+```sh
+# Format code
+npm run format
+
+# Lint code
+npm run lint
+
+# Rebuild and start application
+npm run dc-rebuild
+
+# Run E2E tests
+npm run dc-test
+
+# Run E2E tests with custom ports
+npm run dc-test:custom-ports
+
+# Run unit tests across all packages
+npm run test:unit
+
+# Run all tests (unit + E2E)
+npm run test
+```
+
+### Docker Compose Commands
 
 ```sh
 # Start the application
@@ -35,10 +59,6 @@ docker-compose up e2e
 
 # Run with custom ports
 APP_PORT=8080 AUTH0_PORT=8440 docker-compose up --build e2e
-
-# All in one
-# alias dc="docker-compose"
-dc rm --stop -f && dc build --no-cache && dc up
 ```
 
 ## E2E Testing
@@ -69,6 +89,113 @@ docker-compose up e2e
 - `cypress/support/` - Custom commands and configuration
 - `cypress.config.cjs` - Cypress configuration
 
+## Architecture Overview
+
+This project demonstrates a complete E2E testing setup with Auth0 authentication simulation. Here's how the components work together:
+
+### System Architecture
+
+```mermaid
+graph TB
+    subgraph "Docker Environment"
+        subgraph "App Container"
+            APP[Full-Stack App<br/>Port 3000]
+            APP --> |Serves| FE[React Frontend]
+            APP --> |API| BE[Hono Backend]
+        end
+        
+        subgraph "Auth0 Simulator Container"
+            AUTH[Auth0 Simulator<br/>Port 4400]
+        end
+        
+        subgraph "E2E Test Container"
+            CYPRESS[Cypress Tests<br/>network_mode: host]
+        end
+    end
+    
+    subgraph "External Access"
+        USER[Developer/CI]
+    end
+    
+    USER --> |npm run dc-test| CYPRESS
+    CYPRESS --> |HTTP| APP
+    FE --> |HTTPS OAuth| AUTH
+    BE --> |JWT verification| AUTH
+    AUTH --> |User data| BE
+```
+
+### Authentication Flow
+
+```mermaid
+sequenceDiagram
+    participant C as Cypress Test
+    participant F as Frontend
+    participant B as Backend
+    participant A as Auth0 Simulator
+    
+    Note over C: E2E Test Execution
+    C->>F: Navigate to app
+    F->>A: Redirect to login
+    A->>C: Show login form
+    C->>A: Submit credentials
+    A->>A: Generate JWT token
+    A->>F: Return with auth code
+    F->>A: Exchange code for token
+    A->>F: Return access token
+    F->>B: API call with Bearer token
+    B->>A: Verify JWT signature
+    A->>B: Return user info
+    B->>F: Return protected data
+    F->>C: Display authenticated content
+    C->>C: Assert authentication success
+```
+
+### Package Structure
+
+```mermaid
+graph LR
+    subgraph "Root Project"
+        ROOT[package.json<br/>Workspace configuration]
+    end
+    
+    subgraph "packages/"
+        subgraph "auth0-simulator/"
+            AUTH_PKG[Auth0 Simulator Package<br/>@wataruoguchi/auth0-simulator]
+        end
+        
+        subgraph "example/"
+            subgraph "frontend/"
+                FE_PKG[React Frontend]
+            end
+            
+            subgraph "backend/"
+                BE_PKG[Hono Backend]
+            end
+            
+            subgraph "e2e-app/"
+                E2E_PKG[Cypress E2E Tests]
+            end
+        end
+    end
+    
+    ROOT --> AUTH_PKG
+    ROOT --> FE_PKG
+    ROOT --> BE_PKG
+    ROOT --> E2E_PKG
+    
+    E2E_PKG --> |Uses| AUTH_PKG
+    BE_PKG --> |Uses| AUTH_PKG
+```
+
+### Key Features
+
+- **🔐 Auth0 Simulation**: Complete OAuth2/OpenID Connect flow simulation
+- **🧪 E2E Testing**: Cypress tests with real authentication flows
+- **🐳 Docker Integration**: All services containerized for consistency
+- **📦 Monorepo Structure**: Organized packages with workspace management
+- **🔧 Flexible Ports**: Configurable external ports without code changes
+- **✅ Comprehensive Testing**: Unit tests for simulator + E2E tests for integration
+
 ## Port Configuration
 
 This project supports flexible port configuration, allowing you to choose any available ports from outside the Docker network without modifying the `docker-compose.yml` file.
@@ -81,6 +208,8 @@ This project supports flexible port configuration, allowing you to choose any av
 | `AUTH0_PORT` | `4400` | External port for the Auth0 simulator |
 
 ### Usage Examples
+
+You can try running E2E tests with the following ways:
 
 #### Using Default Ports
 
@@ -104,47 +233,3 @@ APP_PORT=8080 AUTH0_PORT=8440 docker-compose up --build e2e
 
 - App: http://localhost:8080
 - Auth0 Simulator: https://localhost:8440
-
-#### Using a .env File
-
-Create a `.env` file in the project root:
-
-```bash
-APP_PORT=8080
-AUTH0_PORT=8440
-```
-
-Then run:
-
-```bash
-docker-compose up --build e2e
-```
-
-### Running E2E Tests with Custom Ports
-
-```bash
-APP_PORT=8080 AUTH0_PORT=8440 docker-compose up --build e2e
-```
-
-### Important Notes
-
-1. **Internal Ports**: The internal container ports (3000 for app, 4400 for auth0-simulator) remain fixed and should not be changed.
-
-2. **Port Conflicts**: Make sure the external ports you choose are not already in use on your system.
-
-3. **E2E Tests**: The E2E tests use `network_mode: host`, so they will automatically use the external ports you specify.
-
-4. **Health Checks**: The health check for the app container uses the internal port (3000) and doesn't need to be changed.
-
-### Troubleshooting
-
-If you encounter port conflicts:
-
-```bash
-# Check what's using a port
-lsof -i :3000
-lsof -i :4400
-
-# Kill processes using those ports
-kill -9 <PID>
-```

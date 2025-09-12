@@ -8,10 +8,11 @@
     "format": "biome format --write",
     "lint": "biome lint",
     "prepare": "husky",
-    "dc-rebuild": "docker-compose rm --stop -f && docker-compose build --no-cache && docker-compose up --build -d",
+    "dc-rebuild": "docker-compose up --build -d",
     "dc-test": "docker-compose up --build e2e",
     "dc-test:custom-ports": "APP_PORT=8080 AUTH0_PORT=8440 docker-compose up --build e2e",
-    "test:unit": "npm run test --workspaces --if-present"
+    "test:unit": "npm run test --workspaces --if-present",
+    "test": "npm run test:unit && npm run dc-test"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.3",

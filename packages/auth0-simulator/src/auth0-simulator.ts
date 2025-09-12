@@ -135,14 +135,22 @@ app.get("/userinfo", async (c) => {
       return c.json({ error: "Missing or invalid authorization header" }, 401);
     }
 
-    // Extract the access token
-    const accessToken = authHeader.substring(7);
+    // Extract the access token (handle multiple spaces and trim)
+    const accessToken = authHeader
+      .split(" ")
+      .map((s) => s.trim())
+      .pop();
+    if (!accessToken) {
+      return c.json({ error: "Missing or invalid access token" }, 401);
+    }
 
-    // Decode the JWT token to get the sub
-    const { decodeToken } = await import("./jwt-utils.js");
-    const decoded = decodeToken(accessToken);
+    // Verify JWT signature using JWKS (same as backend)
+    const { verifyWithJwks } = await import("hono/jwt");
+    const decoded = await verifyWithJwks(accessToken, {
+      jwks_uri: `https://localhost:${EXTERNAL_PORT}/.well-known/jwks.json`,
+    });
 
-    if (!decoded || !decoded.sub) {
+    if (!decoded || typeof decoded.sub !== "string" || !decoded.sub) {
       return c.json({ error: "Invalid access token" }, 401);
     }
 
@@ -170,56 +178,6 @@ app.get("/userinfo", async (c) => {
     return c.json(userInfo);
   } catch (error) {
     console.error("Userinfo error:", error);
-    return c.json({ error: "Failed to get user info" }, 500);
-  }
-});
-
-// E2E testing endpoint to fetch user by sub
-app.get("/api/e2e/fetch_email_by_sub", async (c) => {
-  try {
-    // Get the Authorization header
-    const authHeader = c.req.header("Authorization");
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return c.json({ error: "Missing or invalid authorization header" }, 401);
-    }
-
-    // Extract the access token
-    const accessToken = authHeader.substring(7);
-
-    // Verify JWT signature using JWKS (same as backend)
-    const { verifyWithJwks } = await import("hono/jwt");
-    const decoded = await verifyWithJwks(accessToken, {
-      jwks_uri: `https://localhost:${EXTERNAL_PORT}/.well-known/jwks.json`,
-    });
-
-    if (!decoded || typeof decoded.sub !== "string" || !decoded.sub) {
-      return c.json({ error: "Invalid access token" }, 401);
-    }
-
-    // Look up the user by sub
-    const user = getUserInfo(decoded.sub, authConfig);
-
-    if (!user) {
-      return c.json({ error: "User not found" }, 404);
-    }
-
-    // Return user info for E2E testing
-    const userInfo = {
-      sub: user.sub,
-      email: user.email,
-      name: user.name,
-      given_name: user.given_name,
-      family_name: user.family_name,
-      picture: user.picture,
-      aud: user.aud,
-      iss: user.iss,
-      azp: user.azp,
-      scope: user.scope,
-    };
-
-    return c.json(userInfo);
-  } catch (error) {
-    console.error("E2E fetch user error:", error);
     return c.json({ error: "Failed to get user info" }, 500);
   }
 });
@@ -287,15 +245,20 @@ export const startAuth0Simulator = async () => {
       if (response.body) {
         const reader = response.body.getReader();
         const pump = async () => {
-          const { done, value } = await reader.read();
-          if (done) {
+          try {
+            const { done, value } = await reader.read();
+            if (done) {
+              res.end();
+            } else {
+              res.write(value);
+              await pump();
+            }
+          } catch (error) {
+            console.error("Stream pump error:", error);
             res.end();
-          } else {
-            res.write(value);
-            pump();
           }
         };
-        pump();
+        await pump();
       } else {
         res.end();
       }
@@ -317,8 +280,4 @@ export const startAuth0Simulator = async () => {
     console.error("Failed to start Auth0 simulator:", error);
     throw error;
   }
-};
-
-export const stopAuth0Simulator = async () => {
-  console.log("Auth0 Simulator stopped");
 };

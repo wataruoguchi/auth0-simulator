@@ -168,7 +168,6 @@ The simulator provides the following endpoints:
 | `/login` | POST | Login form processing |
 | `/oauth/token` | POST | Token exchange |
 | `/userinfo` | GET | Standard OAuth2 userinfo |
-| `/api/e2e/fetch_email_by_sub` | GET | **E2E testing endpoint** |
 | `/.well-known/openid_configuration` | GET | OpenID Connect discovery |
 | `/.well-known/jwks.json` | GET | JSON Web Key Set |
 | `/v2/logout` | GET | Logout endpoint |
@@ -236,14 +235,6 @@ npm run build
 npm run dev
 ```
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/amazing-feature`
-3. Commit your changes: `git commit -m 'Add amazing feature'`
-4. Push to the branch: `git push origin feature/amazing-feature`
-5. Open a Pull Request
-
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
@@ -253,13 +244,3 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - Built with [Hono](https://hono.dev/) - A lightweight web framework
 - JWT handling with [jsonwebtoken](https://github.com/auth0/node-jsonwebtoken)
 - Testing with [Cypress](https://www.cypress.io/) and [Vitest](https://vitest.dev/)
-
-## 📞 Support
-
-- 📧 Email: your.email@example.com
-- 🐛 Issues: [GitHub Issues](https://github.com/wataruoguchi/auth0-simulator/issues)
-- 📖 Documentation: [GitHub Wiki](https://github.com/wataruoguchi/auth0-simulator/wiki)
-
----
-
-Made with ❤️ for the testing community

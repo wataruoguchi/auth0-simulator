@@ -11,7 +11,7 @@ vi.mock("hono/jwt", () => ({
 // Import the mocked function
 import { verifyWithJwks } from "hono/jwt";
 
-describe("E2E Endpoint Tests", () => {
+describe("Userinfo Endpoint Tests", () => {
   let app: Hono;
   let authConfig: ReturnType<typeof createAuthConfig>;
 
@@ -22,8 +22,8 @@ describe("E2E Endpoint Tests", () => {
     // Create a new Hono app for testing
     app = new Hono();
 
-    // Add the E2E endpoint to the app
-    app.get("/api/e2e/fetch_email_by_sub", async (c) => {
+    // Add the userinfo endpoint to the app
+    app.get("/userinfo", async (c) => {
       try {
         // Get the Authorization header
         const authHeader = c.req.header("Authorization");
@@ -34,8 +34,14 @@ describe("E2E Endpoint Tests", () => {
           );
         }
 
-        // Extract the access token
-        const accessToken = authHeader.substring(7);
+        // Extract the access token (handle multiple spaces and trim)
+        const accessToken = authHeader
+          .split(" ")
+          .map((s) => s.trim())
+          .pop();
+        if (!accessToken) {
+          return c.json({ error: "Missing or invalid access token" }, 401);
+        }
 
         // Verify JWT signature using JWKS (same as backend)
         const decoded = await (verifyWithJwks as any)(accessToken, {
@@ -77,7 +83,7 @@ describe("E2E Endpoint Tests", () => {
 
   describe("Authentication", () => {
     it("should return 401 when no Authorization header is provided", async () => {
-      const res = await app.request("/api/e2e/fetch_email_by_sub");
+      const res = await app.request("/userinfo");
       expect(res.status).toBe(401);
 
       const body = await res.json();
@@ -87,7 +93,7 @@ describe("E2E Endpoint Tests", () => {
     });
 
     it("should return 401 when Authorization header doesn't start with 'Bearer '", async () => {
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Invalid token",
         },
@@ -103,7 +109,7 @@ describe("E2E Endpoint Tests", () => {
     it("should return 401 when access token is invalid", async () => {
       (verifyWithJwks as any).mockResolvedValue(null);
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer invalid-token",
         },
@@ -119,7 +125,7 @@ describe("E2E Endpoint Tests", () => {
     it("should return 401 when decoded token has no sub", async () => {
       (verifyWithJwks as any).mockResolvedValue({ email: "test@example.com" });
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -137,7 +143,7 @@ describe("E2E Endpoint Tests", () => {
     it("should return 404 when user is not found", async () => {
       (verifyWithJwks as any).mockResolvedValue({ sub: "non-existent-user" });
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -163,7 +169,7 @@ describe("E2E Endpoint Tests", () => {
 
       (verifyWithJwks as any).mockResolvedValue({ sub: "test-user-123" });
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -200,7 +206,7 @@ describe("E2E Endpoint Tests", () => {
         sub: "user-custom-example-com",
       });
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -229,7 +235,7 @@ describe("E2E Endpoint Tests", () => {
         new Error("JWT verification error"),
       );
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -251,7 +257,7 @@ describe("E2E Endpoint Tests", () => {
 
       (verifyWithJwks as any).mockResolvedValue({ sub: "test-user-123" });
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -281,7 +287,7 @@ describe("E2E Endpoint Tests", () => {
 
       (verifyWithJwks as any).mockResolvedValue({ sub: "complete-user-123" });
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -315,7 +321,7 @@ describe("E2E Endpoint Tests", () => {
 
       (verifyWithJwks as any).mockResolvedValue({ sub: "content-type-user" });
 
-      const res = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -342,7 +348,7 @@ describe("E2E Endpoint Tests", () => {
 
       // Test fetching user1
       (verifyWithJwks as any).mockResolvedValue({ sub: "user-1" });
-      const res1 = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res1 = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
@@ -353,7 +359,7 @@ describe("E2E Endpoint Tests", () => {
 
       // Test fetching user2
       (verifyWithJwks as any).mockResolvedValue({ sub: "user-2" });
-      const res2 = await app.request("/api/e2e/fetch_email_by_sub", {
+      const res2 = await app.request("/userinfo", {
         headers: {
           Authorization: "Bearer valid-token",
         },
