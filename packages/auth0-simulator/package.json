@@ -1,5 +1,5 @@
 {
-  "name": "@wataru/auth0-simulator",
+  "name": "@wataruoguchi/auth0-simulator",
   "version": "0.0.1",
   "description": "Auth0 simulator for E2E testing.",
   "type": "module",
