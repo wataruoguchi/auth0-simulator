@@ -7,11 +7,24 @@ on:
   pull_request:
     branches: [main]
     paths-ignore: ['packages/example/**', '.github/**']
+  workflow_dispatch:
+    inputs:
+      run_tests:
+        description: 'Run quality checks and tests'
+        required: true
+        default: true
+        type: boolean
+      run_release:
+        description: 'Run release (only works on main branch)'
+        required: true
+        default: false
+        type: boolean
 
 jobs:
   quality:
     name: Quality Checks
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.run_tests == true || github.event_name != 'workflow_dispatch' }}
     defaults:
       run:
         working-directory: ./packages/auth0-simulator
@@ -42,7 +55,7 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     needs: quality
-    if: github.ref == 'refs/heads/main'
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' && inputs.run_release == true || github.event_name != 'workflow_dispatch') }}
     permissions:
       contents: write
       issues: write
