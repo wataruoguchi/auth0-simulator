@@ -88,10 +88,10 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build package
-        run: npm run build
+        run: npm run build --workspace=@wataruoguchi/auth0-simulator
 
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-        run: npm run release --access public
+        run: npm run release --workspace=@wataruoguchi/auth0-simulator --access public
